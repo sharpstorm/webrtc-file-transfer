@@ -1,0 +1,584 @@
+<head>
+  <title>WebRTC Transfer</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+  <style>
+    body{
+      background-color: #E1E1E1;
+    }
+
+    .pane{
+      display: none;
+    }
+
+    .pane.active{
+      display: block;
+    }
+
+    .btnset{
+      display: none;
+    }
+
+    .btnset.active{
+      display: block;
+    }
+
+    .win{
+      display: none;
+    }
+
+    .win.active{
+      display: block;
+    }
+    
+    .lds-ellipsis {
+      display: inline-block;
+      position: relative;
+      width: 128px;
+      height: 64px;
+    }
+    .lds-ellipsis div {
+      position: absolute;
+      top: 27px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      animation-timing-function: cubic-bezier(0, 1, 1, 0);
+      left: 6px;
+    }
+    .lds-ellipsis div:nth-child(1) {
+      background-color: #4285F4;
+      animation: lds-ellipsis1 2s infinite;
+    }
+    .lds-ellipsis div:nth-child(2) {
+      background-color: #34A853;
+      animation: lds-ellipsis1 2s infinite -0.5s;
+    }
+    .lds-ellipsis div:nth-child(3) {
+      background-color: #FBBC05;
+      animation: lds-ellipsis1 2s infinite -1s;
+    }
+    .lds-ellipsis div:nth-child(4) {
+      background-color: #EA4335;
+      animation: lds-ellipsis1 2s infinite -1.5s;
+    }
+    @keyframes lds-ellipsis1 {
+      0% { transform: scale(0) translate(0,0); }
+      25% { transform: scale(1) translate(0,0); }
+      50% { transform: scale(1) translate(40px,0); }
+      75% { transform: scale(1) translate(80px,0); }
+      100% { transform: scale(0) translate(80px,0); }
+    }
+
+  </style>
+</head>
+<body>
+  <div id="primary-container" class="container">
+    <div id="connect-dialog" class="modal-dialog win active">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">WebRTC P2P File Transfer</h3>
+        </div>
+        <div class="modal-body">
+          <div class="pane active" id="pane-connect">
+            <h5>Your ID</h5>
+            <div class="col-sm-12">
+              <div id="tb-userid" class="alert alert-secondary" role="alert">000000</div>
+            </div>
+            <hr/>
+            <h5>Connect to Peer</h5>
+            <div class="form-group row" style="margin-top: 20px;">
+              <label for="tb-room-pass" class="col-sm-4 col-form-label">User ID</label>
+              <div class="col-sm-8">
+                <input type="text" class="form-control" id="tb-connect-userid" placeholder="123456" maxlength="6">
+              </div>
+            </div>
+          </div>
+          <div class="pane" id="pane-incoming">
+            <h5>Incoming Connection</h5>
+            <div class="form-group row" style="margin-top: 20px;">
+              <label for="tb-room-pass" class="col-sm-4 col-form-label">User ID</label>
+              <div class="col-sm-8">
+                <div id="tb-incoming-id" class="alert alert-secondary" role="alert">000000</div>
+              </div>
+            </div>
+          </div>
+          <div class="pane" id="pane-transfer">
+            <h5>Transfer Files</h5>
+            <div class="form-group row" style="margin-top: 20px;">
+              <div class="col-sm-12">
+                <input id="inp-upload" type="file" class="" />
+              </div>
+            </div>
+            <div id="transfer-summary" style="display:none;">
+              <hr/>
+              <div class="row">
+                <div class="col-sm-4"><strong>File Name:</strong></div>
+                <div id="transfer-file-name" class="col-sm-8">test.txt</div>
+              </div>
+              <div class="row">
+                <div class="col-sm-4"><strong>File Size:</strong></div>
+                <div id="transfer-file-size" class="col-sm-8">1000000 bytes</div>
+              </div>
+              <div class="row">
+                <div class="col-sm-4"><strong>File Type:</strong></div>
+                <div id="transfer-file-type" class="col-sm-8">image/png</div>
+              </div>
+            </div>
+          </div>
+          <div class="pane" id="pane-incoming-transfer">
+            <h5>Incoming Transfer</h5>
+            <div class="row">
+              <div class="col-sm-4"><strong>File Name:</strong></div>
+              <div id="incoming-file-name" class="col-sm-8">test.txt</div>
+            </div>
+            <div class="row">
+              <div class="col-sm-4"><strong>File Size:</strong></div>
+              <div id="incoming-file-size" class="col-sm-8">1000000 bytes</div>
+            </div>
+            <div class="row">
+              <div class="col-sm-4"><strong>File Type:</strong></div>
+              <div id="incoming-file-type" class="col-sm-8">image/png</div>
+            </div>
+          </div>
+          <div class="pane" id="pane-loading" style="text-align:center;">
+            <h5 id="pane-loading-message"></h5>
+            <div class="lds-ellipsis">
+              <div></div>
+              <div></div>
+              <div></div>
+              <div></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <div id="btnset-connect" class="btnset active">
+            <button id="btn-connect-go" type="button" class="btn btn-primary">Connect</button>
+          </div>
+          <div id="btnset-incoming" class="btnset">
+            <button id="btn-incoming-accept" type="button" class="btn btn-success">Accept</button>
+            <button id="btn-incoming-reject" type="button" class="btn btn-danger">Reject</button>
+          </div>
+          <div id="btnset-transfer" class="btnset">
+            <button id="btn-upload" type="button" class="btn btn-primary">Upload</button>
+          </div>
+          <div id="btnset-blank" class="btnset">
+            
+          </div>
+        </div>
+      </div>
+      <div id="alert-message" class="alert" style="margin-top: 20px;">
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap essentials -->
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/bittools.js"></script>
+  <script>
+    var state = 0;
+    var socket = io();
+    var localState = undefined;
+    var enableInput = false;
+    
+    let dataChannel, pc;
+    let target;
+    let expectedFile;
+    let cachedIncomingData = [];
+    let cachedIncomingLen = 0;
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('btn-connect-go').addEventListener('click', async () => {
+        target = document.getElementById('tb-connect-userid').value;
+        if(target.length !== 6) return;
+        
+        //Send Connection Request
+        showLoading('Connecting...');
+        socket.emit('SendPartnerRequest', target);
+      });
+      
+      socket.on('IdReply', (myId) => {
+        document.getElementById('tb-userid').textContent = myId;
+      });
+      
+      socket.on('PartnerRequestResult', (status) => {
+        if(status === 0){ // Not Found
+          showPane('pane-connect');
+          showBtnset('btnset-connect');
+          alert('Invalid Partner ID');
+          
+        }else if(status === 1){ // Waiting
+          showLoading('Waiting for Partner');
+          
+        }else if(status === 2){ //Accepted
+          showLoading('Negotitating Peer-To-Peer Connection');
+          setupRTCChannel();
+          negotiateRTCDataChannel(() => {
+            socket.close();
+            showTransferPane();
+          });
+          
+        }else if(status === 3){ //Rejected
+          showPane('pane-connect');
+          showBtnset('btnset-connect');
+        }
+      });
+      
+      socket.on('RecvPartnerRequest', (targetId) => {
+        showPane('pane-incoming');
+        showBtnset('btnset-incoming');
+        document.getElementById('tb-incoming-id').textContent = targetId;
+        document.getElementById('btn-incoming-accept').onclick = () => {
+          setupRTCChannel();
+          socket.emit('PartnerResponse', true);
+          showLoading('Negotitating Peer-To-Peer Connection');
+        };
+        
+        document.getElementById('btn-incoming-reject').onclick = () => {
+          socket.emit('PartnerResponse', false);
+          showPane('pane-connect');
+          showBtnset('btnset-connect');
+        };
+      });
+      
+      socket.emit('GetId');
+      
+      // RTC Signalling
+      
+      socket.on('RecvOffer', async (remoteOffer) => {
+        console.log('got offer');
+        await pc.setRemoteDescription(remoteOffer);
+        await pc.setLocalDescription(await pc.createAnswer());
+        socket.emit('OfferReply', pc.localDescription);
+      });
+      
+      socket.on('RecvAnswer', async (remoteAnswer) => {
+        await pc.setRemoteDescription(remoteAnswer);
+      });
+      
+      socket.on('RecvIceCandidate', async (candidate) => {
+        console.log(candidate);
+        await pc.addIceCandidate(candidate);
+      });
+    });
+    
+    function setupRTCChannel(){
+      const configuration = {iceServers: [{urls: 'stun:stun.l.google.com:19302'}]};
+      pc = new RTCPeerConnection(configuration);
+
+      // send any ice candidates to the other peer
+      pc.onicecandidate = ({candidate}) => {
+        console.log(candidate);
+        if(candidate === null) return;
+        socket.emit('SendIceCandidate', candidate);
+      };
+      
+      pc.onnegotiationneeded = async () => {
+        console.log('nego needed');
+        await pc.setLocalDescription(await pc.createOffer());
+        console.log({desc: pc.localDescription});
+        socket.emit('SendOffer', pc.localDescription);
+      };
+      
+      pc.ondatachannel = (ev) => {
+        console.log('New Data Channel Detected');
+        dataChannel = ev.channel;
+        ev.channel.onopen = () => {
+          console.log('Data Channel Open');
+          socket.close();
+          showTransferPane();
+        }
+        
+        ev.channel.onmessage = dataStreamHandler;
+      };
+    }
+    
+    function negotiateRTCDataChannel(callback){
+      //Setup Channel, will trigger nego needed
+      dataChannel = pc.createDataChannel("commsChannel", {});
+
+      dataChannel.onerror = (error) => {
+        console.log("Data Channel Error:", error);
+      };
+
+      dataChannel.onmessage = dataStreamHandler;
+
+      dataChannel.onopen = () => {
+        console.log('Data Channel Opened');
+        dataChannel.send(new Uint8Array([0].concat(encodeString('Handshake1', false))));
+        if(callback !== undefined)
+          callback();
+      };
+
+      dataChannel.onclose = () => {
+        console.log("The Data Channel is Closed");
+      };
+    }
+    
+    function dataStreamHandler(event){
+      const data = new Uint8Array(event.data);
+      
+      console.log("Got Data Channel Message:", data.length);
+      console.log('Header: ' + data[0]);
+      
+      if(data[0] === 0){ //Generic Verbose
+        console.log('Data Recv: ' + decodeEncodedString(data, 1, false, data.length));
+        
+      //Below are all the valid commands
+      }else if(data[0] === 1){ //INCOMING FILE
+        const fileName = readString(data, 1);
+        const fileLen = readJSLong(data, 3 + fileName.length);
+        const fileType = readString(data, 9 + fileName.length);
+        
+        showIncomingFilePane(fileName, fileLen, fileType);
+        
+      }else if(data[0] === 2){ //INCOMING_FILE_ACCEPTANCE
+        const fileAccepted = data[1] === 1;
+        
+        if(!fileAccepted){
+          showTransferPane();
+        }else{
+          //Start Transfer
+          showLoading('Transferring File');
+          startTransferRoutine();
+        }
+      }else if(data[0] === 3){ //INCOMING_DATA_CHUNK
+        console.log('got chunk');
+        const chunkLen = readInt(data, 1);
+        cachedIncomingData.push(data.slice(5, 5 + chunkLen));
+        cachedIncomingLen += chunkLen;
+        
+        if(cachedIncomingLen >= expectedFile.size){
+          console.log('Transfer complete');
+          downloadBlob(cachedIncomingData, expectedFile.mime, expectedFile.name);
+          showTransferPane();
+        }else{
+          console.log(cachedIncomingLen, expectedFile.size);
+        }
+      }
+    }
+    
+    const chunkSize = 128 * 1024;
+    function startTransferRoutine(){
+      const file = document.getElementById('inp-upload').files[0];
+      
+      const lenRead = (file.size < chunkSize) ? file.size : chunkSize;
+      let curPromise = readFile(file, 0, lenRead)
+        .then(result => new Uint8Array(result))
+        .then((result) => {
+          sendPacket(3, PacketBuilder.buildTransferPacket(result));
+        }
+      );
+      
+      let expectedSize;
+      for(let i=lenRead;i<file.size;i+=expectedSize){
+        const curPos = i;
+        expectedSize = ((file.size - i) < chunkSize) ? (file.size - i) : chunkSize;
+        const localExpectedSize = expectedSize;
+        curPromise = curPromise.then(
+          new Promise((resolve) => {
+            readFile(file, curPos, curPos + localExpectedSize)
+            .then(result => {
+              return new Uint8Array(result)
+            })
+            .then((result) => {
+              console.log(dataChannel.bufferedAmount);
+              sendPacket(3, PacketBuilder.buildTransferPacket(result));
+              resolve();
+            });
+          })
+        );
+      }
+      curPromise.then(() => {
+        showTransferPane();
+      });
+    }
+    
+    function showTransferPane(){
+      showPane('pane-transfer');
+      showBtnset('btnset-transfer');
+      
+      document.getElementById('inp-upload').onchange = () => {
+        if(document.getElementById('inp-upload').files.length === 0){
+          document.getElementById('transfer-summary').style.display = 'none';
+          return;
+        }
+        const file = document.getElementById('inp-upload').files[0];
+        document.getElementById('transfer-summary').style.display = '';
+        document.getElementById('transfer-file-name').textContent = file.name;
+        document.getElementById('transfer-file-size').textContent = file.size;
+        document.getElementById('transfer-file-type').textContent = file.type;
+      }
+      
+      document.getElementById('btn-upload').onclick = () => {
+        if(document.getElementById('inp-upload').files.length === 0)
+          return;
+        
+        showLoading('Waiting for Partner');
+        const file = document.getElementById('inp-upload').files[0];
+        sendPacket(1, PacketBuilder.buildRequestTransferFile(file.name, file.size, file.type));
+      }
+    }
+    
+    function showIncomingFilePane(name, size, type){
+      showPane('pane-incoming-transfer');
+      showBtnset('btnset-incoming');
+      
+      document.getElementById('incoming-file-name').textContent = name;
+      document.getElementById('incoming-file-size').textContent = size;
+      document.getElementById('incoming-file-type').textContent = type;
+      
+      document.getElementById('btn-incoming-accept').onclick = () => {
+        expectedFile = {'name': name, 'size': size, 'mime': type};
+        cachedIncomingData = [];
+        cachedIncomingLen = 0;
+        sendPacket(2, PacketBuilder.buildTransferResponse(true));
+        showLoading('Waiting for file');
+      };
+
+      document.getElementById('btn-incoming-reject').onclick = () => {
+        sendPacket(2, PacketBuilder.buildTransferResponse(false));
+        showTransferPane();
+      };
+    }
+    
+    function showPane(activePane){
+      const actives = document.getElementsByClassName('pane active');
+      for(let i=0;i<actives.length;i++){
+        actives[i].classList.remove('active');
+      }
+      
+      document.getElementById(activePane).classList.add('active');
+    }
+    
+    function showBtnset(activeSet){
+      const actives = document.getElementsByClassName('btnset active');
+      for(let i=0;i<actives.length;i++){
+        actives[i].classList.remove('active');
+      }
+      
+      document.getElementById(activeSet).classList.add('active');
+    }
+    
+    function showLoading(message){
+      showPane('pane-loading');
+      showBtnset('btnset-blank');
+      if(message === undefined)
+        message = 'Loading';
+      document.getElementById('pane-loading-message').textContent = message;
+    }
+    
+    let sendQueue = [];
+    let delayedSendChecker;
+    function sendPacket(header, data){
+      if(dataChannel.bufferedAmount > 12 * 1024 * 1024){ //Chrome danger area
+        sendQueue.push(new Uint8Array([header].concat(data)));
+        if(delayedSendChecker === undefined || delayedSendChecker === null || delayedSendChecker === 0)
+          delayedSendChecker = setTimeout(flushPacketQueue, 500);
+        return;
+      }
+      if(sendQueue.length === 0){
+        dataChannel.send(new Uint8Array([header].concat(data)));
+      }else{
+        sendQueue.push(new Uint8Array([header].concat(data)));
+        if(delayedSendChecker === undefined || delayedSendChecker === null || delayedSendChecker === 0)
+          delayedSendChecker = setTimeout(flushPacketQueue, 500);
+      }
+    }
+    
+    function flushPacketQueue(){
+      if(dataChannel.bufferedAmount > 12 * 1024 * 1024){
+        delayedSendChecker = setTimeout(flushPacketQueue, 500);
+        return;
+      }
+      
+      for(let i=0;i<sendQueue.length;i){
+        let pkt = sendQueue.shift();
+        dataChannel.send(pkt);
+        if(dataChannel.bufferedAmount > 12 * 1024 * 1024){
+          delayedSendChecker = setTimeout(flushPacketQueue, 500);
+          return;
+        }
+      }
+    }
+    
+    function downloadBlob(blobData, mime, name){
+      const blob = new Blob(blobData, {type : mime});
+      const dlLink = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = dlLink;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      URL.revokeObjectURL(dlLink);
+      
+    }
+    
+    let fileReader;
+    function initFileReader(){
+      if(fileReader == undefined){
+        fileReader = new FileReader();
+      }
+    }
+
+    const readQueue = [];
+    let readBusy = false;
+
+    function readFile(file, start, end) {
+      if(readBusy){
+        return new Promise((resolve) => {
+          readQueue.push([file, start, end, resolve]);
+        });
+      }
+
+      //Is free
+      initFileReader();
+      return new Promise((resolve) => {
+        readBusy = true;
+        fileReader.onloadend = function(){
+          readBusy = false;
+          const res = fileReader.result;
+          resolve(res);
+          if(readQueue.length > 0){
+            const task = readQueue.shift();
+            readFile(task[0], task[1], task[2]).then(result => task[3](result));
+          }
+        }
+        var chunk = file.slice(start, end);
+        fileReader.readAsArrayBuffer(chunk);
+      });
+    }
+
+  </script>
+  
+  <script>
+  
+    const PacketBuilder = class {
+      static buildRequestTransferFile(name, size, type){
+        return writeString(name).concat(
+          writeJSLong(size),
+          writeString(type)
+        );
+      }
+      
+      static buildTransferResponse(accepted){
+        return [accepted ? 1 : 0];
+      }
+      
+      static buildTransferPacket(data){
+        console.log('sending size: ' + data.length);
+        return writeInt(data.length).concat(
+          Array.from(data)
+        );
+      }
+    }
+    
+  </script>
+</body>

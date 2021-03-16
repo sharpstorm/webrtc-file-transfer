@@ -1,0 +1,15 @@
+{
+  "name": "webrtc-file-transfer",
+  "version": "1.5.0",
+  "description": "WebRTC Peer-to-Peer File Transfer",
+  "main": "server.js",
+  "dependencies": {
+    "express": "^4.16.4",
+    "socket.io": "^2.2.0"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "Sharpie",
+  "license": "ISC"
+}
